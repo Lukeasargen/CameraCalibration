@@ -1,0 +1,28 @@
+Arducam
+OmniVision OV5647 (UC-261)
+5mp
+Resolution: (2592, 1944)
+Sensor:
+Pixel: 1.4 um
+Optical size: 1/4 inch
+
+Lens: LS-40136
+Focal length: 3.2 mm
+Focal ratio: f2.0
+Back focal length: 1.6 mm
+DFOV: 85 degrees
+HFOV: 63.7 degrees
+VFOV: 70 degrees
+
+
+Camera Module V2.1
+Sony IMX219
+8mp
+Resolution: (3280, 2464)
+Sensor: 3.68 x 2.76 mm
+Pixel: 1.12 um
+Optical size: 1/4 inch
+Focal length: 3.04 mm
+HFOV: 62.2 degrees
+VFOV: 48.8 degrees
+Focal ratio: f2.0
