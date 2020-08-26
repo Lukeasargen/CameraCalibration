@@ -44,6 +44,10 @@ def calibrateFromFolder(folderName, width, height, squareSize):
     objpoints = []  # 3d point in  world space
     imgpoints = []  # 2d points in image plane
     
+    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+
+    cv2.resizeWindow('image', 400, 400)
+
     goodCount = 0
 
     for fname in imageFilePaths:
@@ -77,22 +81,20 @@ def calibrateFromFolder(folderName, width, height, squareSize):
             # Draw and display the corners
             img = cv2.drawChessboardCorners(img, (width, height), corners2, ret)
 
-            cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-
-            cv2.resizeWindow('image', (400, 400))
-
             cv2.imshow('image', img)
-            cv2.waitKey(200)
+            cv2.waitKey(100)
 
     cv2.destroyAllWindows()
 
-    print("Using {} images to calibrate".format(goodCount))
 
     if goodCount < 9:
         print("Calibration Failed")
         print("Less than 9 good images.")
         print("Check the dimensions of your checkerboard")
         return None, None, None, None, None
+
+    print("Using {} images to calibrate".format(goodCount))
+
     # ------------ Calibrate ------------
     # ret = RMS re-projection error
     # mtx = (3, 3) camera matrix (focal lengths and optic center)
@@ -201,7 +203,7 @@ def main():
     
     if not os.path.exists(inputFolderPath):
         print("Folder does no exsist : {}".format(inputFolderPath))
-        print("Folder format : --dir={name}_['picam', 'cv']_{width}x{height}")
+        print("Folder format : --dir={name}_['picam', 'cv2']_{width}x{height}")
         return
 
     if args.c:

@@ -19,38 +19,50 @@ def save_live(args):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
 
+    # Calculate resize shape, we don't need to live preview at full resolution
+    ratio = args.height / args.width
+    rw = 320
+    rh = int(rw * ratio)
+    rdim = (rw, rh)
+    print(" Preview resized to {} by {}".format(rw, rh))
+
     # Make directories
     saveFolderPath = os.path.join(CURRENT_DIR_PATH, 'images')  # Append the sample folder name
     
     if not os.path.exists(saveFolderPath):  # Create the folder if it doesn't exsist
         os.mkdir(saveFolderPath)
 
-    saveDir = "{}_cv2_{}x{}".format(args.dir, width, height)
+    saveDir = "{}_cv2_{}x{}".format(args.dir, args.width, args.height)
 
     saveFolderPath = os.path.join(saveFolderPath, saveDir)
 
     if not os.path.exists(saveFolderPath):  # Create the folder if it doesn't exsist
         os.mkdir(saveFolderPath)
 
+    print(" Press spacebar to capture. Press esc to quit.")
+
     # Live view loop
     count = 0
     while True:
         ret, frame = cap.read()
 
-        cv2.imshow('camera', frame)
+        if ret:
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == 27:  # esc
-            break
-        if key == ord(' '):
-            try:
-                filename = "out_{:03d}.jpg".format(count)
-                print("Saving image : ", filename)
-                imgPath = os.path.join(saveFolderPath, filename)
-                cv2.imwrite(imgPath, frame)
-                count += 1
-            except:
-                print("Error saving image.")
+            resize = cv2.resize(frame, rdim)
+            cv2.imshow('camera', resize)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == 27:  # esc
+                break
+            if key == ord(' '):
+                try:
+                    filename = "out_{:03d}.jpg".format(count)
+                    print("Saving image : ", filename)
+                    imgPath = os.path.join(saveFolderPath, filename)
+                    cv2.imwrite(imgPath, frame)
+                    count += 1
+                except:
+                    print("Error saving image.")
 
     cap.release()
     cv2.destroyAllWindows()
@@ -63,7 +75,7 @@ def main():
     parser.add_argument("--dir", required=True, default='out', help="folder name to store images")
     parser.add_argument("--width", default=640, type=int, help="width pixels")
     parser.add_argument("--height", default=480, type=int, help="height pixles")
-    parser.add_argument("-rpi", "--raspi", default=False, type=bool, help="using raspberry pi")
+    parser.add_argument("-rpi", "--raspi", action='store_true', help="using raspberry pi")
     args = parser.parse_args()
 
     save_live(args)
