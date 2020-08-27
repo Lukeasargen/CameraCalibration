@@ -69,7 +69,7 @@ class PicamApp():
 
         # Live view loop
         live_img = None
-        count = 15
+        count = 0
         while not self.quit:
             if self.take_capture:
                 print("Taking picture.")

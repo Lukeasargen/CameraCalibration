@@ -53,7 +53,7 @@ export DISPLAY
 ### Calibration
 ```
 python3 calibratefolder.py --dir=picamv21_cv2_640x480 -c
-python calibratefolder.py --dir=picamv21_picam_3280x2464 -c
+python calibratefolder.py --dir=picamv21_picam_3280x2464 -c --threads 4
 ```
 
 ### Undistort

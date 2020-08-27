@@ -1,20 +1,50 @@
 """https://docs.opencv.org/master/dc/dbb/tutorial_py_calibration.html"""
 
 import os
+import time
 import argparse
 import numpy as np
 import cv2
+import multiprocessing
 
 from common import saveCalibration, loadCalibration
 
 CURRENT_DIR_PATH = os.path.dirname(os.path.realpath(__file__))  # Current file directory
 
-def calibrateFromFolder(folderName, width, height, squareSize):
+def process_image(filename, width, height):
+    img = cv2.imread(filename)
+
+    if img is None:  # Check if the file could be opened
+        print("Image failed to load :", filename)
+        return None
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Find the chess board corners
+    ret, corners = cv2.findChessboardCorners(gray, (width, height), None)
+
+    # If found, add object points, image points (after refining them)
+    if ret:
+        # Termination criteria for finding the sub pixel coordinates of corners (cornerSubPix)
+        criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 40, 0.001)
+
+        # Increase the pixel location accuracy
+        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+        return corners2
+
+    print("No chessboard : ", filename)
+    return None
+
+
+def calibrateFromFolder(folderName, width, height, squareSize, num_threads=1):
     """ Apply camera calibration operation for images in the given array.\n
         param: squareSize = actual checker board square dimensions in meters\n
         param: cornersWidth, cornersHeight = number of internal corners\n
         (ie. chess board is cornersWidth=7, cornersHeight=7)\n
         return: [ret, mtx, dist, rvecs, tvecs]"""
+
+    t0 = time.time()
 
     # Load the image file paths
     samplesPath = os.path.join(CURRENT_DIR_PATH, 'images', folderName)  # Append the sample folder name
@@ -27,9 +57,6 @@ def calibrateFromFolder(folderName, width, height, squareSize):
         if ext.lower() in validImageTypes:  # Check for valid image types
             imagePath = os.path.join(samplesPath, f)
             imageFilePaths.append(imagePath)
-
-    # Termination criteria for finding the sub pixel coordinates of corners (cornerSubPix)
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
     # We need a matrix that represents 3d coordinates of a checkerboard pattern
     # We assume the checker pattern is kept in the Z=0 plane and the camera is moved and rotated
@@ -44,65 +71,48 @@ def calibrateFromFolder(folderName, width, height, squareSize):
     objpoints = []  # 3d point in  world space
     imgpoints = []  # 2d points in image plane
     
-    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+    t1 = time.time()
 
-    cv2.resizeWindow('image', 400, 400)
+    if num_threads > multiprocessing.cpu_count():
+        num_threads = multiprocessing.cpu_count()
+    num_threads = int(num_threads)
+    print("Threads :", num_threads)
 
-    goodCount = 0
+    if num_threads <= 1:
+        pixel_points = [process_image(f, width, height) for f in imageFilePaths]
+    else:
+        pool = multiprocessing.Pool(num_threads)
 
-    for fname in imageFilePaths:
-        # Load the current image
-        img = cv2.imread(fname)
+        from functools import partial
+        target = partial(process_image, width=width, height=height)
 
-        if img is None:  # Check if the file could be opened
-            print("Image failed to load :", fname)
-            continue
+        pixel_points = pool.map(target, imageFilePaths)
 
-        # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    imgpoints = [p for p in pixel_points if p is not None]
 
-        # Find the chess board corners
-        ret, corners = cv2.findChessboardCorners(gray, (width, height), None)
-
-        # If found, add object points, image points (after refining them)
-        if ret:
-            goodCount +=1
-
-            # Keep the array of 3d points the same length as the 2d points
-            # Allows numpy to use vectorized operations
-            objpoints.append(objp)
-
-            # Increase the pixel location accuracy
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            
-            # Add to 2d pixel coordinates
-            imgpoints.append(corners2)
-
-            # Draw and display the corners
-            img = cv2.drawChessboardCorners(img, (width, height), corners2, ret)
-
-            cv2.imshow('image', img)
-            cv2.waitKey(100)
-
-    cv2.destroyAllWindows()
-
-
-    if goodCount < 9:
+    if len(imgpoints) < 9:
         print("Calibration Failed")
         print("Less than 9 good images.")
         print("Check the dimensions of your checkerboard")
         return None, None, None, None, None
 
-    print("Using {} images to calibrate".format(goodCount))
+    print("Using {} images to calibrate".format(len(imgpoints)))
 
+    [objpoints.append(objp) for i in range(len(imgpoints))]
+
+    print("Calculate Image Points : {:.4f} seconds.".format(time.time() - t1))
+
+    t2 = time.time()
     # ------------ Calibrate ------------
     # ret = RMS re-projection error
     # mtx = (3, 3) camera matrix (focal lengths and optic center)
     # dist = (1, 5) distortion coefficients (column vector [k1 k2 p1 p2 k3])
     # rvecs = rotation matrix estimate for each pattern
     # tvecs = translation matrix for each pattern
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-    
+    img = cv2.imread(imageFilePaths[0])
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img.shape[1::-1], None, None)
+    print("Calculate Intrinsics : {:.4f} seconds.".format(time.time() - t2))
+
     print("\nCalibration Complete")
     print("RMS:", ret)
     print("Camera Matrix:\n", mtx)
@@ -115,6 +125,8 @@ def calibrateFromFolder(folderName, width, height, squareSize):
         error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
         mean_error += error
     print("Mean reprojection error: {}".format(mean_error/len(objpoints)) )
+
+    print("Total Duration : {:.4f} seconds.".format(time.time() - t0))
 
     return [ret, mtx, dist, rvecs, tvecs]
 
@@ -196,6 +208,7 @@ def main():
     parser.add_argument('--size', type=float, default=1,  help='square side length in meters, deafult is 1')
     parser.add_argument('--ncols', type=int, default=9, help='number of internal corners of the long side, default is 7')
     parser.add_argument('--nrows',type=int, default=6, help='number of internal corners of the short side, default is 6')
+    parser.add_argument('--threads', type=float, default=1, help='use more cores')
     parser.add_argument('--alpha', type=float, default=0, help='alpha is the amount of unwanted pixels kept, range:[0,1], default is 0 keeps all pixels')
     args = parser.parse_args()
 
@@ -208,7 +221,7 @@ def main():
 
     if args.c:
         print("Calibrating images in '{}'".format(args.dir))
-        ret, camMtx, distcoef, rvecs, tvecs = calibrateFromFolder(inputFolderPath, args.ncols, args.nrows, args.size)
+        ret, camMtx, distcoef, rvecs, tvecs = calibrateFromFolder(inputFolderPath, args.ncols, args.nrows, args.size, args.threads)
         if ret:
             saveCalibration(args.dir, camMtx, distcoef)
     elif args.u:
