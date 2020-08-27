@@ -2,10 +2,10 @@
 ### Capturing
 ```
 # Arducam 5MP M12 lens
-python3 capture_picam.py --dir picamv21 --width 2592 --height 1944
+python3 capture_picam_app.py --dir arducam --width 2592 --height 1944
 
 # picam v2.1 8MP Pinhole lens
-python3 capture_picam.py --dir arducam --width 3280 --height 2464
+python3 capture_picam_app.py --dir picamv21 --width 3280 --height 2464
 
 # Opencv VideoCapture (idk what crop of the sensor it uses so you should calibrate on the cropped images to get better results in opencv scripts)
 python3 capture_opencv.py --dir picamv21 --width 640 --height 480
