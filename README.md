@@ -18,7 +18,7 @@ installs the driver found here: [https://github.com/raspberrypi/linux/tree/rpi-4
 
 _you may have to edit `/etc/modules` to add the line `bcm2835-v4l2`_
 
-This driver is for the live view and X11.
+This driver is for the video capture.
 
 #### X11 Forwarding over ssh
 
@@ -37,9 +37,7 @@ X11Forwarding yes
 X11DisplayOffset 10
 X11UseLocalhost no
 ```
-Restart ssh (ubuntu, debian) :
-
-`$ sudo systemctl restart ssh.service`
+Restart ssh (ubuntu, debian) : `sudo systemctl restart ssh.service`
 
 <!-- Export the display to client :
 
