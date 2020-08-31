@@ -1,4 +1,6 @@
 
+Based off the OpenCV-Python tutorial here : [https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html](https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html)
+
 ### Capturing
 ```
 # Arducam 5MP M12 lens
