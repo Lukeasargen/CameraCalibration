@@ -31,11 +31,9 @@ Use PuTTY for the rest unless you want to deal with default windows ssh. Enable 
 
 ##### Linux Server :
 
-Test for x11 by install xll-apps : `sudo apt-get install x11-apps`
+Test for x11 by installing xauth and xll-apps : `sudo apt-get install xauth x11-apps`
 
 Run `xclock` to test the install and forwarding. If it works then you're done.
-
-Need `xauth` installed on the server : `sudo apt-get install xauth x11-apps`
 
 On the server edit `/etc/ssh/sshd_config` to include these lines:
 ```
